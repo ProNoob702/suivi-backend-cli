@@ -7,14 +7,14 @@
   
   namespace Statsh.Domain.TT.CommandHandlers
   {
-      public sealed class BoardAddBoardMemberCommandHandler : CommandHandler<BoardAggregate, BoardRef, CommandExecutionResult, BoardAddBoardMemberCommand>
+      public sealed class BoardResetTagPropertyOptionsCommandHandler : CommandHandler<BoardAggregate, BoardRef, CommandExecutionResult, BoardResetTagPropertyOptionsCommand>
       {
           public override Task<CommandExecutionResult> ExecuteCommandAsync(
               BoardAggregate aggregate,
-              BoardAddBoardMemberCommand command,
+              BoardResetTagPropertyOptionsCommand command,
               CancellationToken cancellationToken)
           {
-              var executionResult = aggregate.AddBoardMember(command);
+              var executionResult = aggregate.ResetTagPropertyOptions(command);
               return executionResult;
           }
       }
