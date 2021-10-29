@@ -6,7 +6,8 @@ var argv = require("minimist")(process.argv.slice(2));
 -c to take commandWithVerb aggregateType-Verb-Extra
 --server to decide server side command or not 
 --saga to work on saga
-Example:  node . -c Board-Add-BoardMember
+Example command:  node . -c Board-Add-BoardMember
+Example saga: node . --saga Board-Deleted-Saga
 */
 
 if (!Boolean(argv.saga)) {
@@ -159,43 +160,165 @@ namespace Statsh.Domain.TT.CommandHandlers
   //#endregion
 } else {
   //#region SAGA
-  var path = "./";
-  var sagaName = argv.saga;
-  function createSagaFile(filename) {
-    var Template = `using EventFlow.Aggregates;
-    using EventFlow.Sagas;
-    using EventFlow.Sagas.AggregateSagas;
-    using Statsh.Domain.Tenant;
-    using Statsh.Domain.Tenant.Commands;
-    using Statsh.Domain.Tenant.Events;
-    using Statsh.Domain.User;
-    using Statsh.Domain.User.Commands;
-    using Statsh.Domain.User.Events;
-    using Statsh.Domain.WorkspaceCreatedSaga.Events;
-    using System.Threading;
-    using System.Threading.Tasks;
-    
-    namespace Statsh.Domain.WorkspaceCreatedSaga
+  var sagaPath = "./";
+  var sagaSlices = argv.saga.split("-");
+  var sagaName = sagaSlices.join("");
+  var aggregate = sagaSlices[0];
+  var sagaStartingEvent = sagaSlices[0] + sagaSlices[1];
+
+  createSagaFile();
+  createSagaIdFile(sagaName + "Id");
+  createSagaLocatorFile(sagaName + "Locator");
+  createSagaStateFile(sagaName + "State");
+  createStartEventFile(sagaName + "StartedEvent");
+
+  function createSagaFile() {
+    var Template = `
+using EventFlow.Aggregates;
+using EventFlow.Sagas;
+using EventFlow.Sagas.AggregateSagas;
+using Statsh.Domain.${sagaName}.Events;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Statsh.Domain.${sagaName}
+{
+    public sealed class ${sagaName} :
+        AggregateSaga<${sagaName}, ${sagaName}Id, ${sagaName}Locator>,
+        ISagaIsStartedBy<${aggregate}Aggregate, ${aggregate}Ref, ${sagaStartingEvent}Event>,
+        ISagaHandles<...Aggregate, ...Ref, ...Event>,
     {
-        public sealed class WorkspaceCreatedSaga :
-            AggregateSaga<WorkspaceCreatedSaga, WorkspaceCreatedSagaId, WorkspaceCreatedSagaLocator>,
-            ISagaIsStartedBy<WorkspaceAggregate, WorkspaceRef, WorkspaceCreatedEvent>,
-            ISagaHandles<...Aggregate, ...Ref, ...Event>,
+        public ${sagaName}(${sagaName}Id id)
+            : base(id)
         {
-            public WorkspaceCreatedSaga(WorkspaceCreatedSagaId id)
-                : base(id)
+            state = new ${sagaName}State();
+            Register(state);
+        }
+
+        readonly ${sagaName}State state;
+
+    }
+}
+    `;
+    var fileWithPath = `${sagaPath}${sagaName}.cs`;
+    createFile(fileWithPath, Template);
+  }
+
+  function createSagaIdFile(filename) {
+    var Template = `
+using EventFlow.Aggregates;
+using EventFlow.Sagas;
+using EventFlow.ValueObjects;
+using System;
+
+namespace Statsh.Domain.${sagaName}
+{
+    public sealed class ${sagaName}Id : SingleValueObject<string>, ISagaId
+    {
+        public static ${sagaName}Id Create(IDomainEvent domainEvent)
+        {
+            if (domainEvent.IdentityType == typeof(${aggregate}Ref))
             {
-                state = new WorkspaceCreatedSagaState();
-                Register(state);
+                return new ${sagaName}Id(new ${aggregate}Ref(domainEvent.Metadata.AggregateId));
             }
-    
-            readonly WorkspaceCreatedSagaState state;
-    
-    
+            if (domainEvent.GetAggregateEvent() is ... ...)
+            {
+                return new ${sagaName}Id(....ref);
+            }
+            throw new ArgumentException();
+        }
+
+        public ${sagaName}Id(string sagaId)
+            : base(sagaId)
+        {
+        }
+
+        private ${sagaName}Id(${aggregate}Ref Id)
+            : base($"${sagaName}-{Id.Value}")
+        {
         }
     }
+}
     `;
-    var fileWithPath = `${pathToCommandHandlerFiles}${filename}.cs`;
+    var fileWithPath = `${sagaPath}${filename}.cs`;
+    createFile(fileWithPath, Template);
+  }
+
+  function createSagaLocatorFile(filename) {
+    var Template = `
+using EventFlow.Aggregates;
+using EventFlow.Sagas;
+using System.Threading;
+using System.Threading.Tasks;
+
+namespace Statsh.Domain.${sagaName}
+{
+    public sealed class ${sagaName}Locator : ISagaLocator
+    {
+        public Task<ISagaId> LocateSagaAsync(
+          IDomainEvent domainEvent,
+          CancellationToken cancellationToken)
+        {
+            var sagaId = ${sagaName}Id.Create(domainEvent);
+            return Task.FromResult<ISagaId>(sagaId);
+        }
+    }
+}
+    `;
+    var fileWithPath = `${sagaPath}${filename}.cs`;
+    createFile(fileWithPath, Template);
+  }
+
+  function createSagaStateFile(filename) {
+    var Template = `
+using EventFlow.Aggregates;
+using Statsh.Domain.${sagaName}.Events;
+using System.Collections.Generic;
+
+namespace Statsh.Domain.${sagaName}
+{
+    sealed class ${sagaName}State :
+        AggregateState<${sagaName}, ${sagaName}Id, ${sagaName}State>,
+        IEmit<${sagaName}StartedEvent>
+    {
+
+        // private HashSet<UserRef> Users;
+        // public bool BoardImageFileUpdated { get; private set; } = false;
+
+        public bool AllIsOk()
+        {
+            return ...;
+        }
+
+        public void Apply(${sagaName}StartedEvent aggregateEvent)
+        {
+          ...
+        }
+       
+    }
+}
+    
+    `;
+    var fileWithPath = `${sagaPath}${filename}.cs`;
+    createFile(fileWithPath, Template);
+  }
+
+  function createStartEventFile(filename) {
+    var Template = `
+using EventFlow.Aggregates;
+using EventFlow.EventStores;
+using System.Collections.Generic;
+
+namespace Statsh.Domain.${sagaName}.Events
+{
+    [EventVersion("${sagaName}Started", 1)]
+    public class ${sagaName}StartedEvent : IAggregateEvent<${sagaName}, ${sagaName}Id>
+    {
+        
+    }
+}  
+    `;
+    var fileWithPath = `${sagaPath}${filename}.cs`;
     createFile(fileWithPath, Template);
   }
   //#endregion
