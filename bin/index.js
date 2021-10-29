@@ -6,8 +6,10 @@ var argv = require("minimist")(process.argv.slice(2));
 -c to take commandWithVerb aggregateType-Verb-Extra
 --server to decide server side command or not 
 --saga to work on saga
-Example command:  node . -c Board-Add-BoardMember
-Example saga: node . --saga Board-Deleted-Saga
+Example Command:  
+  node . -c Board-Add-BoardMember
+Example Saga: 
+  node . --saga Board-Deleted-Saga
 */
 
 if (!Boolean(argv.saga)) {
