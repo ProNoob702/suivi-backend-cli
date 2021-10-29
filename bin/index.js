@@ -187,8 +187,8 @@ namespace Statsh.Domain.${sagaName}
 {
     public sealed class ${sagaName} :
         AggregateSaga<${sagaName}, ${sagaName}Id, ${sagaName}Locator>,
-        ISagaIsStartedBy<${aggregate}Aggregate, ${aggregate}Ref, ${sagaStartingEvent}Event>,
-        ISagaHandles<...Aggregate, ...Ref, ...Event>,
+        ISagaIsStartedBy<${aggregate}Aggregate, ${aggregate}Ref, ${sagaStartingEvent}Event>
+        // ISagaHandles<...Aggregate, ...Ref, ...Event>
     {
         public ${sagaName}(${sagaName}Id id)
             : base(id)
@@ -198,6 +198,15 @@ namespace Statsh.Domain.${sagaName}
         }
 
         readonly ${sagaName}State state;
+
+        public Task HandleAsync(IDomainEvent<${aggregate}Aggregate, ${aggregate}Ref, ${sagaStartingEvent}Event> domainEvent, ISagaContext sagaContext, CancellationToken cancellationToken)
+        {
+          Emit(new ${sagaName}StartedEvent()
+          {
+             ...
+          });  
+          return Task.CompletedTask;
+        }
 
     }
 }
