@@ -99,7 +99,7 @@ using Statsh.EventFlow.Commands;
 
 namespace Statsh.Domain.TT.Commands
 {
-    [RequiredBoardMemberRole(${aggregateName}MemberRole.Admin)]
+    [Required${aggregateName}MemberRole(${aggregateName}MemberRole.Admin)]
     public class ${filename} : ServerSideCommand<${aggregateName}Aggregate, ${aggregateName}Ref>
     {
         public ${filename}(${aggregateName}Ref id, IEventId sourceEvent)
