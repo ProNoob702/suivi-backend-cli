@@ -117,7 +117,7 @@ using Statsh.EventFlow.Commands;
 
 namespace Statsh.Domain.TT.Commands
 {
-    [RequiredBoardMemberRole(${aggregateName}MemberRole.Admin)]
+    [Required${aggregateName}MemberRole(${aggregateName}MemberRole.Admin)]
     public class ${filename} : ClientSideCommand<${aggregateName}Aggregate, ${aggregateName}Ref>
     {
         public ${filename}(${aggregateName}Ref id, ClientSideCommandRef? commandId): base(id, commandId)
