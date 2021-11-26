@@ -3,9 +3,9 @@
 const fs = require("fs");
 var argv = require("minimist")(process.argv.slice(2));
 /* 
--c to take commandWithVerb aggregateType-Verb-Extra
+-c to take commandWithVerb (aggregateType-Verb-Extra)
 --server to decide server side command or not 
---saga to work on saga
+--saga to work on saga (aggregateType-Extra-saga)
 Example Command:  
   node . -c Board-Add-BoardMember
 Example Saga: 
